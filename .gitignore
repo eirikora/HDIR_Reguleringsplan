@@ -1,0 +1,12 @@
+download-regulation-reports.csv
+downloaded_files.csv
+nedlastede_filer
+.venv
+.env
+.DS_Store
+files/*
+!files/.gitkeep
+__pycache__
+/.idea
+.python-version
+.devcontainer
