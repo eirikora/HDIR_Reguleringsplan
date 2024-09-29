@@ -28,7 +28,6 @@ only_one_url = 'https://www.ehelse.no/kodeverk-og-terminologi/Norsk-klinisk-pros
 filedatabase = 'downloaded_files.csv'
 
 # Set to keep track of downloaded files
-#downloaded_files = set()
 downloaded_file_urls = {}
 
 # Set up Chrome options
@@ -205,11 +204,14 @@ for url, ref_text in url_dict.items():
                 driver.get(url)
                 time.sleep(10)
                 rendered_html = driver.execute_script("return document.documentElement.outerHTML;")
+
+                # Strip down the HTML as much as possible by removing elements of no need for AI/Vector store, like scripts, buttons, style, etc.
                 soup = BeautifulSoup(rendered_html, 'html.parser')
 
                 for tag in soup(['script', 'style', 'header', 'footer', 'nav', 'aside', 'img', 'button', 'input']):
                     tag.decompose()
 
+                # Strip all content in tags above, except for href attributes in a-tags
                 for tag in soup.find_all():
                     if tag.name == 'a':
                         tag.attrs = {key: value for key, value in tag.attrs.items() if key == 'href'}
@@ -219,6 +221,7 @@ for url, ref_text in url_dict.items():
                 parsed_url = urlparse(url)
                 base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
+                # Make all hyperlinks non-local and consider downloading if interesting sub-documents 
                 for a_tag in soup.find_all('a', href=True):
                     href = a_tag['href']
                     absolute_href = urljoin(base_url, href)
@@ -227,6 +230,7 @@ for url, ref_text in url_dict.items():
                     parsed_href = urlparse(absolute_href)
                     ext = os.path.splitext(parsed_href.path)[1].lower()
 
+                    # Define a suitable filename for the subfile pointed to and to be downloaded
                     filename_list = parse_qs(parsed_href.query).get('filename')
                     if not filename_list:
                         thefilename = os.path.basename(parsed_href.path)
@@ -236,23 +240,28 @@ for url, ref_text in url_dict.items():
 
                     absolute_href = unquote(absolute_href)
                     encoded_abs_url = quote(absolute_href, safe=":/")
+                    
+                    # If the hypertext link points to a sub-file that we have not seen yet, download it too
                     if ext in download_file_extensions and encoded_abs_url not in downloaded_file_urls.values():
                         filename = clean_filename(thefilename, max_length=max_filename_length) + ext
                         filename = seq_str + filename
                         filepath = os.path.join(output_dir, filename)
                         success = download_with_curl(encoded_abs_url, filepath)
                         if success:
+                            # If successful download, convert the file to a format supported by OpenAI Vector Stores
                             filepath = convert_to_supported_format(filepath)
                             downloaded_file_urls[filepath] = encoded_abs_url
                         else:
                             print(f'Failed to download linked file: {encoded_abs_url}')
 
+                # Convert beautiful soup structure to cleaned text
                 main_content = soup.find('div', {'id': 'root'})
                 if main_content:
                     clean_html = str(main_content)
                 else:
                     clean_html = str(soup)
 
+                # Save html file
                 filename = seq_str + clean_filename(ref_text, max_length=max_filename_length) + '.html'
                 filepath = os.path.join(output_dir, filename)
                 with open(filepath, 'w', encoding='utf-8') as file:
@@ -260,6 +269,7 @@ for url, ref_text in url_dict.items():
                 downloaded_file_urls[filepath] = url
                 print(f'Saved {filename}')
             else:
+                # Download a non-html URL with CURL
                 parsed_url = urlparse(url)
                 path = unquote(parsed_url.path)
                 ext = os.path.splitext(url)[1]
