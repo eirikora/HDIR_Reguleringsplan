@@ -20,7 +20,8 @@ csv_file = 'download-regulation-reports.csv'
 
 # A filter variable to download only a specific url in csv file. Set to None if all files in the csv file
 only_one_url = None
-only_one_url = 'https://www.ehelse.no/kodeverk-og-terminologi/Norsk-klinisk-prosedyrekodeverk-(NKPK)'
+# only_one_url = 'https://www.ehelse.no/standardisering/standarder/referansearkitektur-for-datadeling'
+# only_one_url = 'https://www.ehelse.no/kodeverk-og-terminologi/Norsk-klinisk-prosedyrekodeverk-(NKPK)'
 # only_one_url = 'https://finnkode.helsedirektoratet.no/adm/collections/3512'
 # only_one_url = 'https://health.ec.europa.eu/document/download/b744f30b-a05e-4b9c-9630-ad96ebd0b2f0_en?filename=ehn_guidelines_eprescriptions_en.pdf'
 
